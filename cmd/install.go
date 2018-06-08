@@ -219,7 +219,8 @@ func install(cmd *cobra.Command, args []string) {
 		K8c:  kc,
 		LogF: log.Printf,
 	}
-	rm, err := m.Install(context.Background(), cs)
+
+	rm, err := m.Install(context.Background(), cs, metahelm.WithK8sNamespace(instConfig.k8sNS))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error running installations: %v\n", err)
 		return

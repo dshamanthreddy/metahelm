@@ -71,7 +71,7 @@ func WithInstallCallback(cb InstallCallback) InstallOption {
 	}
 }
 
-// CallbackAction indicates the decision made by the callback
+// InstallCallbackAction indicates the decision made by the callback
 type InstallCallbackAction int
 
 const (
@@ -167,8 +167,25 @@ func (m *Manager) Install(ctx context.Context, charts []Chart, opts ...InstallOp
 		}
 		c := cmap[obj.Name()]
 		m.log("%v: running helm install", obj.Name())
-		resp, err := m.HC.InstallRelease(c.Location, ops.k8sNamespace, helm.ValueOverrides(c.ValueOverrides))
+		resp, err := m.HC.InstallRelease(c.Location, ops.k8sNamespace, helm.ValueOverrides(c.ValueOverrides), helm.ReleaseName(c.Name()))
 		if err != nil {
+			// I think we need a way to skip over pre-existing sucessful installs
+			// Variation of this method named Update() or expand this function with options?
+
+			// 2018/06/08 10:52:02 objgraph: root: face-web; levels: 3
+			// 2018/06/08 10:52:02 objgraph: level 0: ["face-web"]
+			// 2018/06/08 10:52:02 objgraph: level 1: ["nginx-https"]
+			// 2018/06/08 10:52:02 objgraph: level 2: ["miniboxdns"]
+			// 2018/06/08 10:52:02 miniboxdns: starting install
+			// 2018/06/08 10:52:02 miniboxdns: install callback is not set; proceeding
+			// 2018/06/08 10:52:02 miniboxdns: running helm install
+			// error running installations: error running installs: error executing level 2: error installing chart: rpc error: code = Unknown desc = a release named miniboxdns already exists.
+			// Run: helm ls --all miniboxdns; to check the status of the release
+			// Or run: helm del --purge miniboxdns; to delete it
+
+			// Also Delete()?
+			// Should metahelm have a Delete() func to be able to delete all items in metahelm yaml and/or certain items by name?
+
 			return errors.Wrap(err, "error installing chart")
 		}
 		rn.Lock()
